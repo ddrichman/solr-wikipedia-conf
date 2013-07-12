@@ -1,0 +1,49 @@
+<dataConfig>
+        <dataSource type="FileDataSource" encoding="UTF-8" />
+
+	<script><![CDATA[
+	
+		function AddWikiCategoriesToRow(row) {
+			var text = row.get("text");
+			var categories = new java.util.ArrayList();
+
+			// Wikipedia category spec says that anything after a | in the Category is used for sorting--it's not an actual category name
+			var myRe = /\[\[Category:([^|\]]+)/g;
+
+			var myArray;
+			while ((myArray = myRe.exec(text)) !== null)
+			{
+			   categories.add(myArray[1]); // add the first and only capture group, the category name, to the array
+			}
+
+			row.put('categories', categories);
+			return row;
+		}
+	]]></script>
+
+        <document>
+        <entity name="page"
+                processor="XPathEntityProcessor"
+                stream="true"
+                forEach="/mediawiki/page/"
+		url="enwiki-latest-pages-articles.xml"
+                transformer="RegexTransformer,DateFormatTransformer,script:AddWikiCategoriesToRow"
+                >
+            <field column="id"        xpath="/mediawiki/page/id" />
+            <field column="title"     xpath="/mediawiki/page/title" />
+            
+
+<!-- DDR: we really don't care about the user, revision, or timestamp -->
+            <!-- <field column="user"      xpath="/mediawiki/page/revision/contributor/username" />
+            <field column="userId"    xpath="/mediawiki/page/revision/contributor/id" />
+	    <field column="revision"  xpath="/mediawiki/page/revision/id" />
+            <field column="timestamp" xpath="/mediawiki/page/revision/timestamp" dateTimeFormat="yyyy-MM-dd'T'hh:mm:ss'Z'" />
+
+-->
+            <field column="text"      xpath="/mediawiki/page/revision/text" />
+            <field column="$skipDoc"  regex="^#REDIRECT .*" replaceWith="true" sourceColName="text"/> <!-- skip redirects and disambiguation pages: they won't have category information -->
+	    
+
+       </entity>
+        </document>
+</dataConfig>
